@@ -45,7 +45,10 @@ var PageTransitions = (function($) {
   }
 
   function animate(block, callback) {
-    nextPage($(block).closest('.et-wrapper'), $(block).attr('et-out'), $(block).attr('et-in'), callback);
+    if(!block.attr("previous"))
+          nextPage($(block).closest('.et-wrapper'), $(block).attr('et-out'), $(block).attr('et-in'), callback);
+      else
+          prevPage($(block).closest('.et-wrapper'), $(block).attr('et-out'), $(block).attr('et-in'), callback);
   }
 
   function nextPage(block, outClass, inClass, callback) {
@@ -93,6 +96,53 @@ var PageTransitions = (function($) {
         onEndAnimation($currPage, $nextPage, block);
       }
     });
+  }
+
+  function prevPage(block, outClass, inClass, callback) {
+      block = $(block);
+      inClass = formatClass(inClass);
+      outClass = formatClass(outClass);
+      var current = block.data('current'),
+          $pages = block.children('.et-page'),
+          pagesCount = $pages.length,
+          endCurrPage = false,
+          endPrevPage = false;
+
+      if (block.data('isAnimating')) {
+          return false;
+      }
+
+      block.data('isAnimating', true);
+
+      var $currPage = $pages.eq(current);
+      if (current >= 0) {
+          current--;
+      }
+      else {
+          current = pagesCount - 1;
+      }
+      block.data('current', current);
+
+      var $prevPage = $pages.eq(current).addClass('et-page-current');
+
+      $currPage.addClass(outClass).on(animEndEventName, function () {
+          $currPage.off(animEndEventName);
+          endCurrPage = true;
+          if (endPrevPage) {
+              if (jQuery.isFunction(callback)) {
+                  callback(block, $prevPage, $currPage);
+              }
+              onEndAnimation($currPage, $prevPage, block);
+          }
+      });
+
+      $prevPage.addClass(inClass).on(animEndEventName, function () {
+          $prevPage.off(animEndEventName);
+          endPrevPage = true;
+          if (endCurrPage) {
+              onEndAnimation($currPage, $prevPage, block);
+          }
+      });
   }
 
   function onEndAnimation($outpage, $inpage, block) {
